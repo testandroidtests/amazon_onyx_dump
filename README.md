@@ -1,0 +1,13 @@
+# onyx-user 7.0 PS7314 1443 amz-p,release-keys
+- manufacturer: amazon
+- platform: mt8168
+- codename: onyx
+- flavor: onyx-user
+- release: 9
+- id: PS7314
+- incremental: 0018086208388
+- tags: amz-p,release-keys
+- fingerprint: Amazon/onyx/onyx:7.0/PS7314/1443N:user/amz-p,release-keys
+- brand: Amazon
+- branch: onyx-user-7.0-PS7314-1443-amz-p,release-keys
+- repo: amazon_onyx_dump
