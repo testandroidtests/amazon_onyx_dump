@@ -1,0 +1,11 @@
+#set zram
+service set_zram /init.zram.sh
+    class late_start
+    user root
+    group root
+    disabled
+    oneshot
+    seclabel u:r:set_zram:s0
+
+on property:sys.boot_completed=1
+    start set_zram
