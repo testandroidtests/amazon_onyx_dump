@@ -1,0 +1,119 @@
+# MTK project .rc configure
+import /vendor/etc/init/hw/init.mdump.rc
+
+#enable init.zram.rc
+import /init.zram.rc
+import /vendor/etc/init/hw/init.coredump.rc
+
+on init
+    mount tmpfs tmpfs /mnt/media_rw/ mode=0755,uid=1000,gid=1000
+    mkdir /mnt/media_rw/usbotg 0700 media_rw media_rw
+    mkdir /storage/usbotg 0700 root root
+    mount tmpfs tmpfs /storage/usbotg mode=0755,uid=1000,gid=1000
+
+    export DOWNLOAD_CACHE /cache
+
+on boot
+    write /proc/sys/vm/min_free_kbytes 32768
+
+on post-fs-data
+#Camera
+    chmod 0660 /dev/MAINAF
+    chown system camera /dev/MAINAF
+
+    chmod 0660 /dev/MAINAF2
+    chown system camera /dev/MAINAF2
+
+    chmod 0660 /dev/SUBAF
+    chown system camera /dev/SUBAF
+
+    chmod 0660 /dev/GAF001AF
+    chown system camera /dev/GAF001AF
+
+    chmod 0660 /dev/DW9714AF
+    chown system camera /dev/DW9714AF
+
+    chmod 0660 /dev/AD5820AF
+    chown system camera /dev/AD5820AF
+
+    chmod 0660 /dev/BU64745GWZAF
+    chown system camera /dev/BU64745GWZAF
+
+    chmod 0660 /dev/FM50AF
+    chown system camera /dev/FM50AF
+
+#SMB
+    chown system system /proc/smb/ScreenComm
+    chmod 0660 /proc/smb/ScreenComm
+
+#Set mlock resource to unlimited
+    setrlimit 8 4294967295 4294967295
+
+#Define device for ATCID
+    chmod 660 /dev/ttyGS0
+    chown system /dev/ttyGS0
+    chmod 660 /dev/ttyGS1
+    chown system /dev/ttyGS1
+
+#disable console_suspend to get better logging for kernel crashes
+    write /sys/module/printk/parameters/console_suspend N
+
+
+
+
+
+on init
+    # Refer to http://source.android.com/devices/tech/storage/index.html
+    # It said, "Starting in Android 4.4, multiple external storage devices are surfaced to developers through
+    #           Context.getExternalFilesDirs(), Context.getExternalCacheDirs(), and Context.getObbDirs().
+    #           External storage devices surfaced through these APIs must be a semi-permanent part of the device (such as an SD card slot in a battery compartment).
+    #           Developers expect data stored in these locations to be available over long periods of time."
+    # Therefore, if the target doesn't support sd hot-plugging (Ex: the SD card slot in a battery compartment), we need to export SECONDARY_STORAGE in 'boot' section
+    #
+    # export SECONDARY_STORAGE /storage/sdcard1
+
+service fuse_usbotg /system/bin/sdcard -u 1023 -g 1023 -w 1023 -d /mnt/media_rw/usbotg /storage/usbotg
+    class late_start
+    disabled
+
+
+on property:vendor.hwc.video_mode=1
+     write /sys/devices/platform/soc/soc:mtkfb@0/backlight_mode "mov"
+
+on property:vendor.hwc.video_mode=0
+     write /sys/devices/platform/soc/soc:mtkfb@0/backlight_mode "off"
+
+# Top-off mode
+on property:vendor.battery_charging_cv_level=1
+    write /sys/devices/platform/charger/top_off_mode 1
+
+on property:vendor.battery_charging_cv_level=0
+    write /sys/devices/platform/charger/top_off_mode 0
+
+#touch gesture wakeup
+on property:vendor.touch_gesture_wakeup=1
+    write /sys/touchscreen/link_input_dev/gesture_wakeup 1
+
+on property:vendor.touch_gesture_wakeup=0
+    write /sys/touchscreen/link_input_dev/gesture_wakeup 0
+
+# Create /keys mount point and mount
+on post-fs-data && property:ro.boot.mnt_keys_rw_opts=rw
+    mkdir /mnt/vendor/keys 0751 root system
+    mount_all /vendor/etc/fstab.mount_keys.rw
+on post-fs-data && property:ro.boot.mnt_keys_rw_opts=ro
+    mkdir /mnt/vendor/keys 0751 root system
+    mount_all /vendor/etc/fstab.mount_keys.ro
+
+# Update the dm-verity state to partition.*.verified properties
+on post-fs-data
+    verity_update_state
+
+on property:sys.boot_completed=1
+# set scheduler parameter
+   write /proc/sys/kernel/sched_migration_cost_ns 33000
+   write /proc/sys/kernel/sched_min_granularity_ns 1500000
+
+# Wireless charging feature flag
+on property:ro.boot.wpc.support=1
+     setprop ro.vendor.wpc.support 1
